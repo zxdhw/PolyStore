@@ -147,6 +147,10 @@ void polystore_exit(void) __attribute__((destructor));
 DIR* real_opendir(const char *pathname);
 struct dirent* real_readdir(DIR *dirp);
 int real_closedir(DIR *dirp);
+int polystore_io_uring_syscall(long syscall_number,
+                               long arg0, long arg1, long arg2,
+                               long arg3, long arg4, long arg5,
+                               long *result);
 
 /* opemetadata.c */
 int polystore_open(const char *pathname, int flags, mode_t mode);

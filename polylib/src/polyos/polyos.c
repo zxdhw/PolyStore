@@ -221,7 +221,6 @@ static int __init my_init(void) {
 err3:
         device_destroy(polyos_controller_class, devno);
 err2:
-        class_unregister(polyos_controller_class);
         class_destroy(polyos_controller_class);
 err1:
         unregister_chrdev_region(dev, MODULE_MAX_DEV);
@@ -234,7 +233,6 @@ static void __exit my_exit(void) {
 
         /* Unregister PolyOS */
         device_destroy(polyos_controller_class, devno);
-        class_unregister(polyos_controller_class); 
         class_destroy(polyos_controller_class); 
         unregister_chrdev_region(devno, MODULE_MAX_DEV); 
 

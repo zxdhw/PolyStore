@@ -38,6 +38,26 @@ We use the following two devices as our base hetegorgeneous storage device confi
 - 256GB Intel Optane persistent memory (/dev/pmem0) 
 - 400GB Intel NVMe SSD (/dev/nvme1n1)
 
+### io_uring support
+
+The default PolyStore library (`polylib/build/libpolystore.so`) routes explicit-offset `IORING_OP_READ`, `IORING_OP_WRITE`, `IORING_OP_READV`, `IORING_OP_WRITEV`, `IORING_OP_READ_FIXED`, and `IORING_OP_WRITE_FIXED` requests for files opened through PolyStore. Create and close the file with the regular PolyStore file APIs; the ring then submits the I/O asynchronously. Reads are capped at the logical file size, and writes allocate PolyStore extents using the active placement policy.
+
+Requests that reach the end of a 2 MiB PolyStore extent may complete short. The application must resubmit any remaining bytes at the next logical offset. This implementation currently requires ordinary mmap-backed rings and explicit offsets. `IORING_SETUP_SQPOLL`, `IORING_SETUP_NO_MMAP`, `IOSQE_FIXED_FILE`, registered fixed files, `IORING_OP_OPENAT`, and the Poly-cache library variants are not routed through PolyStore. Unsupported operations submitted with a PolyStore synthetic descriptor will fail in the kernel as an invalid descriptor.
+
+PolyStore accounts I/O bytes when the kernel accepts SQEs, since completions are consumed from the userspace-mapped CQ ring without a syscall. Applications must still check each CQE result; failed writes can leave the in-memory logical-size estimate ahead of successfully written data.
+
+
+The smoke test in `polylib/tests/io_uring_smoke.c` checks queue depth 32, all supported read/write opcodes, short completions at extent boundaries, `O_DIRECT`, and data readback. Build it after loading PolyOS and mounting the fast and slow storage directories:
+
+```
+gcc -O2 -Wall -Wextra -Werror -o /tmp/io_uring_smoke polylib/tests/io_uring_smoke.c
+export LD_LIBRARY_PATH="$POLYLIB_PATH/libs/interval-tree:$POLYLIB_PATH/libs/syscall-intercept/build"
+POLYSTORE_SCHED_SPLIT_POINT=1 LD_PRELOAD="$POLYLIB_PATH/build/libpolystore.so" /tmp/io_uring_smoke /mnt/polystore/io_uring-fast-buffered buffered
+POLYSTORE_SCHED_SPLIT_POINT=0 LD_PRELOAD="$POLYLIB_PATH/build/libpolystore.so" /tmp/io_uring_smoke /mnt/polystore/io_uring-slow-direct direct
+```
+
+The test opens its PolyStore path with `O_EXCL` and leaves the file in place. Use a fresh path for each run.
+
 ## Setup 
 
 ### Step 1: Get PolyStore source code on Github and clone it to your own working directory
@@ -271,4 +291,3 @@ $ ./run_polystore_polycache.sh
 Reboot the machine if it fails.
 
 After rebooting, as mentioned in step 4 above, make sure to set the environmental variable again.
-

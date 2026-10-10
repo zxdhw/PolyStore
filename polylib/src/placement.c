@@ -17,11 +17,6 @@ unsigned int sched_epoch_tic = 0;
 unsigned int sched_fastdev_usage = 0;
 unsigned long sched_aggre_throughput = 0;
 
-uint64_t profile_fast_placed = 0;
-uint64_t profile_slow_placed = 0;
-char profile_g_stat_dump_fname[PATH_MAX];
-FILE *profile_g_stat_dump_file = NULL;
-
 /* Static, with stat only, no dynamic placement */
 void polystore_placement_static_statonly(void) {
         struct l_task_ctx *task_ctx_list_node = NULL, *tmp = NULL;

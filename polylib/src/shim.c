@@ -702,6 +702,11 @@ static int hook(long syscall_number,
                 long arg2, long arg3,
                 long arg4, long arg5,
                 long *result) {
+        int uring_result = polystore_io_uring_syscall(syscall_number,
+                        arg0, arg1, arg2, arg3, arg4, arg5, result);
+        if (uring_result == 0)
+                return 0;
+
         switch (syscall_number) {
                 case SYS_open: 
                         return shim_do_open((const char*)arg0, 
